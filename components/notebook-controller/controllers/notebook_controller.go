@@ -381,7 +381,9 @@ func generateVirtualService(instance *v1beta1.Notebook) (*unstructured.Unstructu
 	namespace := instance.Namespace
 	clusterDomain := "cluster.local"
 	prefix := fmt.Sprintf("/notebook/%s/%s/", namespace, name)
-	rewrite := fmt.Sprintf("/notebook/%s/%s/", namespace, name)
+	//rewrite := fmt.Sprintf("/notebook/%s/%s/", namespace, name)
+	//for code-server
+	rewrite := "/"
 	if clusterDomainFromEnv, ok := os.LookupEnv("CLUSTER_DOMAIN"); ok {
 		clusterDomain = clusterDomainFromEnv
 	}
