@@ -1,4 +1,4 @@
-github.com/kubeflow/kubeflow/components/notebook-controller
+github.com/kubeflow/kubeflow/components/vscode-controller
 cloud.google.com/go
 github.com/beorn7/perks
 github.com/davecgh/go-spew

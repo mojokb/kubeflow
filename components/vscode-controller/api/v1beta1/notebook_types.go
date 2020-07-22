@@ -23,28 +23,28 @@ import (
 // EDIT THIS FILE!  THIS IS SCAFFOLDING FOR YOU TO OWN!
 // NOTE: json tags are required.  Any new fields you add must have json tags for the fields to be serialized.
 
-// NotebookSpec defines the desired state of Notebook
-type NotebookSpec struct {
+// VscodeSpec defines the desired state of Vscode
+type VscodeSpec struct {
 	// INSERT ADDITIONAL SPEC FIELDS - desired state of cluster
 	// Important: Run "make" to regenerate code after modifying this file
-	Template NotebookTemplateSpec `json:"template,omitempty"`
+	Template VscodeTemplateSpec `json:"template,omitempty"`
 }
 
-type NotebookTemplateSpec struct {
+type VscodeTemplateSpec struct {
 	Spec corev1.PodSpec `json:"spec,omitempty"`
 }
 
-// NotebookStatus defines the observed state of Notebook
-type NotebookStatus struct {
+// VscodeStatus defines the observed state of Vscode
+type VscodeStatus struct {
 	// Conditions is an array of current conditions
-	Conditions []NotebookCondition `json:"conditions"`
+	Conditions []VscodeCondition `json:"conditions"`
 	// ReadyReplicas is the number of Pods created by the StatefulSet controller that have a Ready Condition.
 	ReadyReplicas int32 `json:"readyReplicas"`
 	// ContainerState is the state of underlying container.
 	ContainerState corev1.ContainerState `json:"containerState"`
 }
 
-type NotebookCondition struct {
+type VscodeCondition struct {
 	// Type is the type of the condition. Possible values are Running|Waiting|Terminated
 	Type string `json:"type"`
 	// Last time we probed the condition.
@@ -62,24 +62,24 @@ type NotebookCondition struct {
 // +kubebuilder:subresource:status
 // +kubebuilder:storageversion
 
-// Notebook is the Schema for the notebooks API
-type Notebook struct {
+// Vscode is the Schema for the Vscodes API
+type Vscode struct {
 	metav1.TypeMeta   `json:",inline"`
 	metav1.ObjectMeta `json:"metadata,omitempty"`
 
-	Spec   NotebookSpec   `json:"spec,omitempty"`
-	Status NotebookStatus `json:"status,omitempty"`
+	Spec   VscodeSpec   `json:"spec,omitempty"`
+	Status VscodeStatus `json:"status,omitempty"`
 }
 
 // +kubebuilder:object:root=true
 
-// NotebookList contains a list of Notebook
-type NotebookList struct {
+// VscodeList contains a list of Vscode
+type VscodeList struct {
 	metav1.TypeMeta `json:",inline"`
 	metav1.ListMeta `json:"metadata,omitempty"`
-	Items           []Notebook `json:"items"`
+	Items           []Vscode `json:"items"`
 }
 
 func init() {
-	SchemeBuilder.Register(&Notebook{}, &NotebookList{})
+	SchemeBuilder.Register(&Vscode{}, &VscodeList{})
 }

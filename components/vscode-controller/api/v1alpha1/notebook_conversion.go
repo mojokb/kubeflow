@@ -18,18 +18,18 @@ package v1alpha1
 import (
 	"sigs.k8s.io/controller-runtime/pkg/conversion"
 
-	nbv1beta1 "github.com/kubeflow/kubeflow/components/notebook-controller/api/v1beta1"
+	nbv1beta1 "github.com/kubeflow/kubeflow/components/vscode-controller/api/v1beta1"
 )
 
-// ConvertTo converts this Notebook to the Hub version (v1beta1).
-func (src *Notebook) ConvertTo(dstRaw conversion.Hub) error {
-	dst := dstRaw.(*nbv1beta1.Notebook)
+// ConvertTo converts this Vscode to the Hub version (v1beta1).
+func (src *Vscode) ConvertTo(dstRaw conversion.Hub) error {
+	dst := dstRaw.(*nbv1beta1.Vscode)
 	dst.Spec.Template.Spec = src.Spec.Template.Spec
 	dst.Status.ReadyReplicas = src.Status.ReadyReplicas
 	dst.Status.ContainerState = src.Status.ContainerState
-	conditions := []nbv1beta1.NotebookCondition{}
+	conditions := []nbv1beta1.VscodeCondition{}
 	for _, c := range src.Status.Conditions {
-		newc := nbv1beta1.NotebookCondition{
+		newc := nbv1beta1.VscodeCondition{
 			Type:          c.Type,
 			LastProbeTime: c.LastProbeTime,
 			Reason:        c.Reason,
@@ -48,14 +48,14 @@ Most of the conversion is straightforward copying, except for converting our cha
 */
 
 // ConvertFrom converts from the Hub version (v1beta1) to this version.
-func (dst *Notebook) ConvertFrom(srcRaw conversion.Hub) error {
-	src := srcRaw.(*nbv1beta1.Notebook)
+func (dst *Vscode) ConvertFrom(srcRaw conversion.Hub) error {
+	src := srcRaw.(*nbv1beta1.Vscode)
 	dst.Spec.Template.Spec = src.Spec.Template.Spec
 	dst.Status.ReadyReplicas = src.Status.ReadyReplicas
 	dst.Status.ContainerState = src.Status.ContainerState
-	conditions := []NotebookCondition{}
+	conditions := []VscodeCondition{}
 	for _, c := range src.Status.Conditions {
-		newc := NotebookCondition{
+		newc := VscodeCondition{
 			Type:          c.Type,
 			LastProbeTime: c.LastProbeTime,
 			Reason:        c.Reason,

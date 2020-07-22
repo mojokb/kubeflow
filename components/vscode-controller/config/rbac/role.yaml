@@ -9,7 +9,7 @@ rules:
 - apiGroups:
   - =kubeflow.org
   resources:
-  - notebooks
+  - vscodes
   verbs:
   - create
   - delete
@@ -21,7 +21,7 @@ rules:
 - apiGroups:
   - kubeflow.org
   resources:
-  - notebooks/status
+  - vscodes/status
   verbs:
   - get
   - patch

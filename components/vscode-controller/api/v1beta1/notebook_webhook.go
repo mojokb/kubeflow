@@ -21,9 +21,9 @@ import (
 )
 
 // log is for logging in this package.
-var notebooklog = logf.Log.WithName("notebook-resource")
+var Vscodelog = logf.Log.WithName("Vscode-resource")
 
-func (r *Notebook) SetupWebhookWithManager(mgr ctrl.Manager) error {
+func (r *Vscode) SetupWebhookWithManager(mgr ctrl.Manager) error {
 	return ctrl.NewWebhookManagedBy(mgr).
 		For(r).
 		Complete()

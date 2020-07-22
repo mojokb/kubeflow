@@ -1,4 +1,4 @@
-module github.com/kubeflow/kubeflow/components/notebook-controller
+module github.com/kubeflow/kubeflow/components/vscode-controller
 
 go 1.12
 

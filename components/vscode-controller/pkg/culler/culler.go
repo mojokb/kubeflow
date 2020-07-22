@@ -8,7 +8,7 @@ import (
 	"strconv"
 	"time"
 
-	"github.com/kubeflow/kubeflow/components/notebook-controller/pkg/metrics"
+	"github.com/kubeflow/kubeflow/components/vscode-controller/pkg/metrics"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	logf "sigs.k8s.io/controller-runtime/pkg/runtime/log"
 )
@@ -32,11 +32,11 @@ const DEFAULT_CLUSTER_DOMAIN = "cluster.local"
 // respective culling logic for that Resource. The value of the annotation will
 // be a timestamp of when the Resource was stopped/culled.
 //
-// In case of Notebooks, the controller will reduce the replicas to 0 if
+// In case of Vscodes, the controller will reduce the replicas to 0 if
 // this annotation is set. If it's not set, then it will make the replicas 1.
 const STOP_ANNOTATION = "kubeflow-resource-stopped"
 
-type NotebookStatus struct {
+type VscodeStatus struct {
 	Started      string `json:"started"`
 	LastActivity string `json:"last_activity"`
 	Connections  int    `json:"connections"`
@@ -102,8 +102,8 @@ func SetStopAnnotation(meta *metav1.ObjectMeta, m *metrics.Metrics) {
 		})
 	}
 	if m != nil {
-		m.NotebookCullingCount.WithLabelValues(meta.Namespace, meta.Name).Inc()
-		m.NotebookCullingTimestamp.WithLabelValues(meta.Namespace, meta.Name).Set(float64(t.Unix()))
+		m.VscodeCullingCount.WithLabelValues(meta.Namespace, meta.Name).Inc()
+		m.VscodeCullingTimestamp.WithLabelValues(meta.Namespace, meta.Name).Set(float64(t.Unix()))
 	}
 }
 
@@ -135,11 +135,11 @@ func StopAnnotationIsSet(meta metav1.ObjectMeta) bool {
 }
 
 // Culling Logic
-func getNotebookApiStatus(nm, ns string) *NotebookStatus {
-	// Get the Notebook Status from the Server's /api/status endpoint
+func getVscodeApiStatus(nm, ns string) *VscodeStatus {
+	// Get the Vscode Status from the Server's /api/status endpoint
 	domain := getEnvDefault("CLUSTER_DOMAIN", DEFAULT_CLUSTER_DOMAIN)
 	url := fmt.Sprintf(
-		"http://%s.%s.svc.%s/notebook/%s/%s/api/status",
+		"http://%s.%s.svc.%s/vscode/%s/%s/api/status",
 		nm, ns, domain, ns, nm)
 
 	resp, err := client.Get(url)
@@ -156,11 +156,11 @@ func getNotebookApiStatus(nm, ns string) *NotebookStatus {
 		return nil
 	}
 
-	status := new(NotebookStatus)
+	status := new(VscodeStatus)
 	err = json.NewDecoder(resp.Body).Decode(status)
 	if err != nil {
 		log.Info(fmt.Sprintf(
-			"Error parsing the JSON response for Notebook %s/%s", nm, ns),
+			"Error parsing the JSON response for Vscode %s/%s", nm, ns),
 			"error", err)
 		return nil
 	}
@@ -168,15 +168,15 @@ func getNotebookApiStatus(nm, ns string) *NotebookStatus {
 	return status
 }
 
-func notebookIsIdle(nm, ns string, status *NotebookStatus) bool {
-	// Being idle means that the Notebook can be culled
+func vscodeIsIdle(nm, ns string, status *VscodeStatus) bool {
+	// Being idle means that the Vscode can be culled
 	if status == nil {
 		return false
 	}
 
 	lastActivity, err := time.Parse(time.RFC3339, status.LastActivity)
 	if err != nil {
-		log.Info(fmt.Sprintf("Error parsing time for Notebook %s/%s", nm, ns),
+		log.Info(fmt.Sprintf("Error parsing time for Vscode %s/%s", nm, ns),
 			"error", err)
 		return false
 	}
@@ -188,7 +188,7 @@ func notebookIsIdle(nm, ns string, status *NotebookStatus) bool {
 	return false
 }
 
-func NotebookNeedsCulling(nbMeta metav1.ObjectMeta) bool {
+func VscodeNeedsCulling(nbMeta metav1.ObjectMeta) bool {
 	if getEnvDefault("ENABLE_CULLING", DEFAULT_ENABLE_CULLING) != "true" {
 		log.Info("Culling of idle Pods is Disabled. To enable it set the " +
 			"ENV Var 'ENABLE_CULLING=true'")
@@ -197,10 +197,10 @@ func NotebookNeedsCulling(nbMeta metav1.ObjectMeta) bool {
 
 	nm, ns := nbMeta.GetName(), nbMeta.GetNamespace()
 	if StopAnnotationIsSet(nbMeta) {
-		log.Info(fmt.Sprintf("Notebook %s/%s is already stopping", ns, nm))
+		log.Info(fmt.Sprintf("Vscode %s/%s is already stopping", ns, nm))
 		return false
 	}
 
-	notebookStatus := getNotebookApiStatus(nm, ns)
-	return notebookIsIdle(nm, ns, notebookStatus)
+	vscodeStatus := getVscodeApiStatus(nm, ns)
+	return vscodeIsIdle(nm, ns, vscodeStatus)
 }

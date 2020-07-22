@@ -1,14 +1,14 @@
-# This script aims to load test Kubeflow Notebook controller by starting
-# certain nubmer of Kubeflow Notebook custom resources.
+# This script aims to load test Kubeflow Vscode controller by starting
+# certain nubmer of Kubeflow Vscode custom resources.
 #
 # Before the test, make sure you have connected to your desired Kubeflow cluster
 # and have enough Kubernetes resources (or have autoscaling turned on).
 #
 # To start the load test, you can run
-#   python3.8 start_notebooks.py -l <#notebooks> -n <namespace>
+#   python3.8 start_vscodes.py -l <#vscodes> -n <namespace>
 #
 # After the test, you can delete the resources via the following command
-#   python3.8 start_notebooks.py -l <#notebooks> -n <namespace> -p delete
+#   python3.8 start_vscodes.py -l <#vscodes> -n <namespace> -p delete
 
 import argparse
 import subprocess
@@ -21,11 +21,11 @@ parser = argparse.ArgumentParser(
 parser.add_argument(
     '-l',
     '--load',
-    dest='num_notebooks',
+    dest='num_vscodes',
     nargs='?',
     default=3,
     type=int,
-    help='Number of notebooks to start the load test. (Default: %(default)s)',
+    help='Number of vscodes to start the load test. (Default: %(default)s)',
 )
 
 parser.add_argument(
@@ -47,10 +47,10 @@ parser.add_argument(
 )
 
 
-def write_notebook_config(config, name, num):
+def write_vscode_config(config, name, num):
   config['metadata']['name'] = 'jupyter-test-' + str(num)
   config['spec']['template']['spec']['containers'][0]['name'
-                                                     ] = 'notebook-' + str(num)
+                                                     ] = 'vscode-' + str(num)
   config['spec']['template']['spec']['volumes'][0]['persistentVolumeClaim'][
       'claimName'] = 'test-vol-' + str(num)
   with open(name, 'w') as f:
@@ -66,20 +66,20 @@ def write_pvc_config(config, name, num):
 def main():
   args = parser.parse_args()
   assert args.operation == 'apply' or args.operation == 'delete'
-  notebook_config = None
+  vscode_config = None
   pvc_config = None
   with open('jupyter_test.yaml', 'r') as f:
-    notebook_config = yaml.safe_load(f.read())
+    vscode_config = yaml.safe_load(f.read())
   with open('jupyter_pvc.yaml', 'r') as f:
     pvc_config = yaml.safe_load(f.read())
-  for i in range(args.num_notebooks):
-    notebook_name = f'jupyter_test_{i}.yaml'
+  for i in range(args.num_vscodes):
+    vscode_name = f'jupyter_test_{i}.yaml'
     pvc_name = f'jupyter_pvc_{i}.yaml'
-    write_notebook_config(notebook_config, notebook_name, i)
+    write_vscode_config(vscode_config, vscode_name, i)
     write_pvc_config(pvc_config, pvc_name, i)
-    print(f'kubectl {args.operation} -f {notebook_name} ...')
+    print(f'kubectl {args.operation} -f {vscode_name} ...')
     subprocess.run([
-        'kubectl', args.operation, '-f', notebook_name, '-n', args.namespace
+        'kubectl', args.operation, '-f', vscode_name, '-n', args.namespace
     ],
                    capture_output=True,
                    check=True)

@@ -19,11 +19,11 @@ import (
 	"flag"
 	"os"
 
-	nbv1 "github.com/kubeflow/kubeflow/components/notebook-controller/api/v1"
-	nbv1alpha1 "github.com/kubeflow/kubeflow/components/notebook-controller/api/v1alpha1"
-	nbv1beta1 "github.com/kubeflow/kubeflow/components/notebook-controller/api/v1beta1"
-	"github.com/kubeflow/kubeflow/components/notebook-controller/controllers"
-	controller_metrics "github.com/kubeflow/kubeflow/components/notebook-controller/pkg/metrics"
+	nbv1 "github.com/kubeflow/kubeflow/components/vscode-controller/api/v1"
+	nbv1alpha1 "github.com/kubeflow/kubeflow/components/vscode-controller/api/v1alpha1"
+	nbv1beta1 "github.com/kubeflow/kubeflow/components/vscode-controller/api/v1beta1"
+	"github.com/kubeflow/kubeflow/components/vscode-controller/controllers"
+	controller_metrics "github.com/kubeflow/kubeflow/components/vscode-controller/pkg/metrics"
 	"k8s.io/apimachinery/pkg/runtime"
 	clientgoscheme "k8s.io/client-go/kubernetes/scheme"
 	_ "k8s.io/client-go/plugin/pkg/client/auth/gcp"
@@ -66,19 +66,19 @@ func main() {
 		os.Exit(1)
 	}
 
-	if err = (&controllers.NotebookReconciler{
+	if err = (&controllers.VscodeReconciler{
 		Client:        mgr.GetClient(),
-		Log:           ctrl.Log.WithName("controllers").WithName("Notebook"),
+		Log:           ctrl.Log.WithName("controllers").WithName("Vscode"),
 		Scheme:        mgr.GetScheme(),
 		Metrics:       controller_metrics.NewMetrics(mgr.GetClient()),
-		EventRecorder: mgr.GetEventRecorderFor("notebook-controller"),
+		EventRecorder: mgr.GetEventRecorderFor("vscode-controller"),
 	}).SetupWithManager(mgr); err != nil {
-		setupLog.Error(err, "unable to create controller", "controller", "Notebook")
+		setupLog.Error(err, "unable to create controller", "controller", "Vscode")
 		os.Exit(1)
 	}
 
 	// uncomment when we need the conversion webhook.
-	// if err = (&nbv1beta1.Notebook{}).SetupWebhookWithManager(mgr); err != nil {
+	// if err = (&nbv1beta1.Vscode{}).SetupWebhookWithManager(mgr); err != nil {
 	// 	setupLog.Error(err, "unable to create webhook", "webhook", "Captain")
 	// 	os.Exit(1)
 	// }

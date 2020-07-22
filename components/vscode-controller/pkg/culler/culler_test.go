@@ -133,22 +133,22 @@ func TestStopAnnotationIsSet(t *testing.T) {
 	}
 }
 
-func TestNotebookIsIdle(t *testing.T) {
+func TestVscodeIsIdle(t *testing.T) {
 	testCases := []struct {
 		testName string
-		status   *NotebookStatus
+		status   *VscodeStatus
 		env      map[string]string
 		result   bool
 	}{
 		{
-			testName: "No Notebook Status received from Server",
+			testName: "No Vscode Status received from Server",
 			status:   nil,
 			env:      map[string]string{},
 			result:   false,
 		},
 		{
 			testName: "LastActivity is empty string",
-			status: &NotebookStatus{
+			status: &VscodeStatus{
 				LastActivity: "",
 			},
 			env:    map[string]string{},
@@ -156,7 +156,7 @@ func TestNotebookIsIdle(t *testing.T) {
 		},
 		{
 			testName: "LastActivity is not RF3339 formated",
-			status: &NotebookStatus{
+			status: &VscodeStatus{
 				LastActivity: "should-fail",
 			},
 			env:    map[string]string{},
@@ -164,7 +164,7 @@ func TestNotebookIsIdle(t *testing.T) {
 		},
 		{
 			testName: "LastActivity is too old",
-			status: &NotebookStatus{
+			status: &VscodeStatus{
 				LastActivity: "1996-04-11T00:00:00Z",
 			},
 			env:    map[string]string{},
@@ -172,7 +172,7 @@ func TestNotebookIsIdle(t *testing.T) {
 		},
 		{
 			testName: "LastActivity is too recent",
-			status: &NotebookStatus{
+			status: &VscodeStatus{
 				LastActivity: time.Now().Format(time.RFC3339),
 			},
 			env:    map[string]string{},
@@ -180,7 +180,7 @@ func TestNotebookIsIdle(t *testing.T) {
 		},
 		{
 			testName: "LastActivity until Now is 1 minute MORE than the deadline",
-			status: &NotebookStatus{
+			status: &VscodeStatus{
 				LastActivity: time.Now().Add(-6 * time.Minute).Format(time.RFC3339),
 			},
 			env: map[string]string{
@@ -190,7 +190,7 @@ func TestNotebookIsIdle(t *testing.T) {
 		},
 		{
 			testName: "LastActivity until Now is 1 minute LESS than the deadline",
-			status: &NotebookStatus{
+			status: &VscodeStatus{
 				LastActivity: time.Now().Add(-4 * time.Minute).Format(time.RFC3339),
 			},
 			env: map[string]string{
@@ -207,14 +207,14 @@ func TestNotebookIsIdle(t *testing.T) {
 				os.Setenv(envVar, val)
 			}
 
-			if notebookIsIdle("test", "kubeflow", c.status) != c.result {
+			if vscodeIsIdle("test", "kubeflow", c.status) != c.result {
 				t.Errorf("Wrong result for case status: %+v", c.status)
 			}
 		})
 	}
 }
 
-func TestNotebookNeedsCulling(t *testing.T) {
+func TestVscodeNeedsCulling(t *testing.T) {
 	testCases := []struct {
 		testName string
 		meta     metav1.ObjectMeta
@@ -250,7 +250,7 @@ func TestNotebookNeedsCulling(t *testing.T) {
 				os.Setenv(envVar, val)
 			}
 
-			if NotebookNeedsCulling(c.meta) != c.result {
+			if VscodeNeedsCulling(c.meta) != c.result {
 				t.Errorf("Wrong result for case: %+v", c)
 			}
 		})

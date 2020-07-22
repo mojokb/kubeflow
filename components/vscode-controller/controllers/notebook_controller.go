@@ -23,9 +23,9 @@ import (
 
 	"github.com/go-logr/logr"
 	reconcilehelper "github.com/kubeflow/kubeflow/components/common/reconcilehelper"
-	"github.com/kubeflow/kubeflow/components/notebook-controller/api/v1beta1"
-	"github.com/kubeflow/kubeflow/components/notebook-controller/pkg/culler"
-	"github.com/kubeflow/kubeflow/components/notebook-controller/pkg/metrics"
+	"github.com/kubeflow/kubeflow/components/vscode-controller/api/v1beta1"
+	"github.com/kubeflow/kubeflow/components/vscode-controller/pkg/culler"
+	"github.com/kubeflow/kubeflow/components/vscode-controller/pkg/metrics"
 	appsv1 "k8s.io/api/apps/v1"
 	corev1 "k8s.io/api/core/v1"
 	apierrs "k8s.io/apimachinery/pkg/api/errors"
@@ -63,8 +63,8 @@ func ignoreNotFound(err error) error {
 	return err
 }
 
-// NotebookReconciler reconciles a Notebook object
-type NotebookReconciler struct {
+// VscodeReconciler reconciles a Vscode object
+type VscodeReconciler struct {
 	client.Client
 	Log           logr.Logger
 	Scheme        *runtime.Scheme
@@ -76,29 +76,29 @@ type NotebookReconciler struct {
 // +kubebuilder:rbac:groups=apps,resources=statefulsets/status,verbs=get;update;patch
 // +kubebuilder:rbac:groups=core,resources=services,verbs=get;list;watch;create;update;patch;delete
 // +kubebuilder:rbac:groups=core,resources=services/status,verbs=get;update;patch
-// +kubebuilder:rbac:groups=kubeflow.org,resources=notebooks,verbs=get;list;watch;create;update;patch;delete
-// +kubebuilder:rbac:groups=kubeflow.org,resources=notebooks/status,verbs=get;update;patch
+// +kubebuilder:rbac:groups=kubeflow.org,resources=vscodes,verbs=get;list;watch;create;update;patch;delete
+// +kubebuilder:rbac:groups=kubeflow.org,resources=vscodes/status,verbs=get;update;patch
 
-func (r *NotebookReconciler) Reconcile(req ctrl.Request) (ctrl.Result, error) {
+func (r *VscodeReconciler) Reconcile(req ctrl.Request) (ctrl.Result, error) {
 	ctx := context.Background()
-	log := r.Log.WithValues("notebook", req.NamespacedName)
+	log := r.Log.WithValues("vscode", req.NamespacedName)
 
-	// TODO(yanniszark): Can we avoid reconciling Events and Notebook in the same queue?
+	// TODO(yanniszark): Can we avoid reconciling Events and Vscode in the same queue?
 	event := &corev1.Event{}
 	var getEventErr error
 	getEventErr = r.Get(ctx, req.NamespacedName, event)
 	if getEventErr == nil {
-		involvedNotebook := &v1beta1.Notebook{}
+		involvedVscode := &v1beta1.Vscode{}
 		nbName, err := nbNameFromInvolvedObject(r.Client, &event.InvolvedObject)
 		if err != nil {
 			return ctrl.Result{}, err
 		}
-		involvedNotebookKey := types.NamespacedName{Name: nbName, Namespace: req.Namespace}
-		if err := r.Get(ctx, involvedNotebookKey, involvedNotebook); err != nil {
-			log.Error(err, "unable to fetch Notebook by looking at event")
+		involvedVscodeKey := types.NamespacedName{Name: nbName, Namespace: req.Namespace}
+		if err := r.Get(ctx, involvedVscodeKey, involvedVscode); err != nil {
+			log.Error(err, "unable to fetch Vscode by looking at event")
 			return ctrl.Result{}, ignoreNotFound(err)
 		}
-		r.EventRecorder.Eventf(involvedNotebook, event.Type, event.Reason,
+		r.EventRecorder.Eventf(involvedVscode, event.Type, event.Reason,
 			"Reissued from %s/%s: %s", strings.ToLower(event.InvolvedObject.Kind), event.InvolvedObject.Name, event.Message)
 	}
 	if getEventErr != nil && !apierrs.IsNotFound(getEventErr) {
@@ -106,9 +106,9 @@ func (r *NotebookReconciler) Reconcile(req ctrl.Request) (ctrl.Result, error) {
 	}
 	// If not found, continue. Is not an event.
 
-	instance := &v1beta1.Notebook{}
+	instance := &v1beta1.Vscode{}
 	if err := r.Get(ctx, req.NamespacedName, instance); err != nil {
-		log.Error(err, "unable to fetch Notebook")
+		log.Error(err, "unable to fetch Vscode")
 		return ctrl.Result{}, ignoreNotFound(err)
 	}
 
@@ -123,12 +123,12 @@ func (r *NotebookReconciler) Reconcile(req ctrl.Request) (ctrl.Result, error) {
 	err := r.Get(ctx, types.NamespacedName{Name: ss.Name, Namespace: ss.Namespace}, foundStateful)
 	if err != nil && apierrs.IsNotFound(err) {
 		log.Info("Creating StatefulSet", "namespace", ss.Namespace, "name", ss.Name)
-		r.Metrics.NotebookCreation.WithLabelValues(ss.Namespace).Inc()
+		r.Metrics.VscodeCreation.WithLabelValues(ss.Namespace).Inc()
 		err = r.Create(ctx, ss)
 		justCreated = true
 		if err != nil {
 			log.Error(err, "unable to create Statefulset")
-			r.Metrics.NotebookFailCreation.WithLabelValues(ss.Namespace).Inc()
+			r.Metrics.VscodeFailCreation.WithLabelValues(ss.Namespace).Inc()
 			return ctrl.Result{}, err
 		}
 	} else if err != nil {
@@ -218,7 +218,7 @@ func (r *NotebookReconciler) Reconcile(req ctrl.Request) (ctrl.Result, error) {
 				oldConditions[0].Reason != newCondition.Reason ||
 				oldConditions[0].Message != newCondition.Message {
 				log.Info("Appending to conditions: ", "namespace", instance.Namespace, "name", instance.Name, "type", newCondition.Type, "reason", newCondition.Reason, "message", newCondition.Message)
-				instance.Status.Conditions = append([]v1beta1.NotebookCondition{newCondition}, oldConditions...)
+				instance.Status.Conditions = append([]v1beta1.VscodeCondition{newCondition}, oldConditions...)
 			}
 			err = r.Status().Update(ctx, instance)
 			if err != nil {
@@ -227,15 +227,15 @@ func (r *NotebookReconciler) Reconcile(req ctrl.Request) (ctrl.Result, error) {
 		}
 	}
 
-	// Check if the Notebook needs to be stopped
-	if podFound && culler.NotebookNeedsCulling(instance.ObjectMeta) {
+	// Check if the Vscode needs to be stopped
+	if podFound && culler.VscodeNeedsCulling(instance.ObjectMeta) {
 		log.Info(fmt.Sprintf(
-			"Notebook %s/%s needs culling. Setting annotations",
+			"Vscode %s/%s needs culling. Setting annotations",
 			instance.Namespace, instance.Name))
 
-		// Set annotations to the Notebook
+		// Set annotations to the Vscode
 		culler.SetStopAnnotation(&instance.ObjectMeta, r.Metrics)
-		r.Metrics.NotebookCullingCount.WithLabelValues(instance.Namespace, instance.Name).Inc()
+		r.Metrics.VscodeCullingCount.WithLabelValues(instance.Namespace, instance.Name).Inc()
 		err = r.Update(ctx, instance)
 		if err != nil {
 			return ctrl.Result{}, err
@@ -250,7 +250,7 @@ func (r *NotebookReconciler) Reconcile(req ctrl.Request) (ctrl.Result, error) {
 	return ctrl.Result{}, nil
 }
 
-func getNextCondition(cs corev1.ContainerState) v1beta1.NotebookCondition {
+func getNextCondition(cs corev1.ContainerState) v1beta1.VscodeCondition {
 	var nbtype = ""
 	var nbreason = ""
 	var nbmsg = ""
@@ -267,7 +267,7 @@ func getNextCondition(cs corev1.ContainerState) v1beta1.NotebookCondition {
 		nbmsg = cs.Terminated.Reason
 	}
 
-	newCondition := v1beta1.NotebookCondition{
+	newCondition := v1beta1.VscodeCondition{
 		Type:          nbtype,
 		LastProbeTime: metav1.Now(),
 		Reason:        nbreason,
@@ -276,7 +276,7 @@ func getNextCondition(cs corev1.ContainerState) v1beta1.NotebookCondition {
 	return newCondition
 }
 
-func generateStatefulSet(instance *v1beta1.Notebook) *appsv1.StatefulSet {
+func generateStatefulSet(instance *v1beta1.Vscode) *appsv1.StatefulSet {
 	replicas := int32(1)
 	if culler.StopAnnotationIsSet(instance.ObjectMeta) {
 		replicas = 0
@@ -297,13 +297,13 @@ func generateStatefulSet(instance *v1beta1.Notebook) *appsv1.StatefulSet {
 			Template: corev1.PodTemplateSpec{
 				ObjectMeta: metav1.ObjectMeta{Labels: map[string]string{
 					"statefulset":   instance.Name,
-					"notebook-name": instance.Name,
+					"vscode-name": instance.Name,
 				}},
 				Spec: instance.Spec.Template.Spec,
 			},
 		},
 	}
-	// copy all of the Notebook labels to the pod including poddefault related labels
+	// copy all of the Vscode labels to the pod including poddefault related labels
 	l := &ss.Spec.Template.ObjectMeta.Labels
 	for k, v := range instance.ObjectMeta.Labels {
 		(*l)[k] = v
@@ -318,14 +318,14 @@ func generateStatefulSet(instance *v1beta1.Notebook) *appsv1.StatefulSet {
 		container.Ports = []corev1.ContainerPort{
 			{
 				ContainerPort: DefaultContainerPort,
-				Name:          "notebook-port",
+				Name:          "vscode-port",
 				Protocol:      "TCP",
 			},
 		}
 	}
 	container.Env = append(container.Env, corev1.EnvVar{
 		Name:  "NB_PREFIX",
-		Value: "/notebook/" + instance.Namespace + "/" + instance.Name,
+		Value: "/vscode/" + instance.Namespace + "/" + instance.Name,
 	})
 
 	// For some platforms (like OpenShift), adding fsGroup: 100 is troublesome.
@@ -343,7 +343,7 @@ func generateStatefulSet(instance *v1beta1.Notebook) *appsv1.StatefulSet {
 	return ss
 }
 
-func generateService(instance *v1beta1.Notebook) *corev1.Service {
+func generateService(instance *v1beta1.Vscode) *corev1.Service {
 	// Define the desired Service object
 	port := DefaultContainerPort
 	containerPorts := instance.Spec.Template.Spec.Containers[0].Ports
@@ -373,15 +373,15 @@ func generateService(instance *v1beta1.Notebook) *corev1.Service {
 }
 
 func virtualServiceName(kfName string, namespace string) string {
-	return fmt.Sprintf("notebook-%s-%s", namespace, kfName)
+	return fmt.Sprintf("vscode-%s-%s", namespace, kfName)
 }
 
-func generateVirtualService(instance *v1beta1.Notebook) (*unstructured.Unstructured, error) {
+func generateVirtualService(instance *v1beta1.Vscode) (*unstructured.Unstructured, error) {
 	name := instance.Name
 	namespace := instance.Namespace
 	clusterDomain := "cluster.local"
-	prefix := fmt.Sprintf("/notebook/%s/%s/", namespace, name)
-	//rewrite := fmt.Sprintf("/notebook/%s/%s/", namespace, name)
+	prefix := fmt.Sprintf("/vscode/%s/%s/", namespace, name)
+	//rewrite := fmt.Sprintf("/vscode/%s/%s/", namespace, name)
 	//for code-server
 	rewrite := "/"
 	if clusterDomainFromEnv, ok := os.LookupEnv("CLUSTER_DOMAIN"); ok {
@@ -440,8 +440,8 @@ func generateVirtualService(instance *v1beta1.Notebook) (*unstructured.Unstructu
 
 }
 
-func (r *NotebookReconciler) reconcileVirtualService(instance *v1beta1.Notebook) error {
-	log := r.Log.WithValues("notebook", instance.Namespace)
+func (r *VscodeReconciler) reconcileVirtualService(instance *v1beta1.Vscode) error {
+	log := r.Log.WithValues("vscode", instance.Namespace)
 	virtualService, err := generateVirtualService(instance)
 	if err := ctrl.SetControllerReference(instance, virtualService, r.Scheme); err != nil {
 		return err
@@ -500,24 +500,24 @@ func nbNameFromInvolvedObject(c client.Client, object *corev1.ObjectReference) (
 		if err != nil {
 			return "", err
 		}
-		if nbName, ok := pod.Labels["notebook-name"]; ok {
+		if nbName, ok := pod.Labels["vscode-name"]; ok {
 			return nbName, nil
 		}
 	}
-	return "", fmt.Errorf("object isn't related to a Notebook")
+	return "", fmt.Errorf("object isn't related to a Vscode")
 }
 
 func nbNameExists(client client.Client, nbName string, namespace string) bool {
-	if err := client.Get(context.Background(), types.NamespacedName{Namespace: namespace, Name: nbName}, &v1beta1.Notebook{}); err != nil {
+	if err := client.Get(context.Background(), types.NamespacedName{Namespace: namespace, Name: nbName}, &v1beta1.Vscode{}); err != nil {
 		// If error != NotFound, trigger the reconcile call anyway to avoid loosing a potential relevant event
 		return !apierrs.IsNotFound(err)
 	}
 	return true
 }
 
-func (r *NotebookReconciler) SetupWithManager(mgr ctrl.Manager) error {
+func (r *VscodeReconciler) SetupWithManager(mgr ctrl.Manager) error {
 	builder := ctrl.NewControllerManagedBy(mgr).
-		For(&v1beta1.Notebook{}).
+		For(&v1beta1.Vscode{}).
 		Owns(&appsv1.StatefulSet{}).
 		Owns(&corev1.Service{})
 	// watch Istio virtual service
@@ -541,20 +541,20 @@ func (r *NotebookReconciler) SetupWithManager(mgr ctrl.Manager) error {
 		func(a handler.MapObject) []ctrl.Request {
 			return []ctrl.Request{
 				{NamespacedName: types.NamespacedName{
-					Name:      a.Meta.GetLabels()["notebook-name"],
+					Name:      a.Meta.GetLabels()["vscode-name"],
 					Namespace: a.Meta.GetNamespace(),
 				}},
 			}
 		})
 	p := predicate.Funcs{
 		UpdateFunc: func(e event.UpdateEvent) bool {
-			if _, ok := e.MetaOld.GetLabels()["notebook-name"]; !ok {
+			if _, ok := e.MetaOld.GetLabels()["vscode-name"]; !ok {
 				return false
 			}
 			return e.ObjectOld != e.ObjectNew
 		},
 		CreateFunc: func(e event.CreateEvent) bool {
-			if _, ok := e.Meta.GetLabels()["notebook-name"]; !ok {
+			if _, ok := e.Meta.GetLabels()["vscode-name"]; !ok {
 				return false
 			}
 			return true

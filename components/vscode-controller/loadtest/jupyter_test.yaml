@@ -1,5 +1,5 @@
 apiVersion: kubeflow.org/v1
-kind: Notebook
+kind: Vscode
 metadata:
   name: jupyter-test
 spec:

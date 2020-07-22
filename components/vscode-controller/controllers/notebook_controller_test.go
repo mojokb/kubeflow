@@ -16,10 +16,10 @@ import (
 func TestNbNameFromInvolvedObject(t *testing.T) {
 	testPod := &corev1.Pod{
 		ObjectMeta: v1.ObjectMeta{
-			Name:      "test-notebook-0",
+			Name:      "test-vscode-0",
 			Namespace: "test-namespace",
 			Labels: map[string]string{
-				"notebook-name": "test-notebook",
+				"vscode-name": "test-vscode",
 			},
 		},
 	}
@@ -30,14 +30,14 @@ func TestNbNameFromInvolvedObject(t *testing.T) {
 		},
 		InvolvedObject: corev1.ObjectReference{
 			Kind:      "Pod",
-			Name:      "test-notebook-0",
+			Name:      "test-vscode-0",
 			Namespace: "test-namespace",
 		},
 	}
 
 	testSts := &appsv1.StatefulSet{
 		ObjectMeta: v1.ObjectMeta{
-			Name:      "test-notebook",
+			Name:      "test-vscode",
 			Namespace: "test",
 		},
 	}
@@ -48,7 +48,7 @@ func TestNbNameFromInvolvedObject(t *testing.T) {
 		},
 		InvolvedObject: corev1.ObjectReference{
 			Kind:      "StatefulSet",
-			Name:      "test-notebook",
+			Name:      "test-vscode",
 			Namespace: "test-namespace",
 		},
 	}
@@ -61,12 +61,12 @@ func TestNbNameFromInvolvedObject(t *testing.T) {
 		{
 			name:           "pod event",
 			event:          podEvent,
-			expectedNbName: "test-notebook",
+			expectedNbName: "test-vscode",
 		},
 		{
 			name:           "statefulset event",
 			event:          stsEvent,
-			expectedNbName: "test-notebook",
+			expectedNbName: "test-vscode",
 		},
 	}
 	objects := []runtime.Object{testPod, testSts}
