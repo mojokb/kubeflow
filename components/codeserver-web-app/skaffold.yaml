@@ -6,14 +6,14 @@
 apiVersion: skaffold/v2alpha1
 kind: Config
 metadata:
-  name: vscode-controller
+  name: codeserver-web-app
 build:
   artifacts:
-  - image: brightfly/vscode-controller
+  - image: brightfly/codeserver-web-app
     # Context should be ${KUBEFLOW_REPO}/components
-    context: ..
+    context: .
     kaniko:
-      dockerfile: vscode-controller/Dockerfile
+      dockerfile: Dockerfile
       buildContext:
         localDir: {}
       cache: {}
@@ -21,3 +21,4 @@ build:
     namespace: default
     dockerConfig:
       secretName: skaffold-cfg
+
